@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/ubuntu/c_projects/basic/build",
+  "command": "/usr/bin/cc   -I/home/ubuntu/c_projects/basic/inc   -I/usr/include -I/usr/src/linux-headers-4.4.0-75-generic -Wall -Wextra -Wno-unused-parameter -pthread   -o CMakeFiles/main.dir/src/main.c.o   -c /home/ubuntu/c_projects/basic/src/main.c",
+  "file": "/home/ubuntu/c_projects/basic/src/main.c"
+}
+]

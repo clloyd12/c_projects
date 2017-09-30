@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../inc/main.h
+
+/home/ubuntu/c_projects/basic/src/main.c
+stdlib.h
+-
+stdio.h
+-
+string.h
+-
+main.h
+/home/ubuntu/c_projects/basic/src/main.h
+
