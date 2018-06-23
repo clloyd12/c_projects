@@ -121,7 +121,20 @@
 /* pair_of_int_t pair; */
 /* EXPAND_ARGS(4) */
 
+struct _array_holder {
+
+	int* arr;
+	int length;
+};
+typedef struct _array_holder ArrayHolder;
+
+enum Side {Left = 1, Right = 0}; 
+
+// various functions
 char* string_stuff(); 
 char* get_a_string_ptr(char a_str[]);
+ArrayHolder* get_half(const ArrayHolder* arr_holder, enum Side side); 
+int find_max_by_brute_force(const int arr[], int size); 
+
 
 #endif

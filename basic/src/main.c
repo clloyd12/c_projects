@@ -4,9 +4,11 @@
 #include <string.h>
 #include <errno.h>
 #include <math.h>
+#include <time.h>
 #include "main.h"
 #include "fileops.h"
 #include "btree.h"
+#include "assert.h"
 
 DEF_PAIR_OF(int);
 
@@ -28,7 +30,7 @@ void pass_str_function(const char* p_str) {
 
 char* string_stuff() {
 
-	printf("doing string stuff ...\n");
+	printf("doing string stuff...\n");
 
 	// initialize the string
 	// this will go in the global string pool
@@ -189,9 +191,9 @@ void show_populated_segment(int* head, int marker) {
 		printf("%d ", *(head+i));
 		i++;
 	}
-	   
+
 	printf("\n");
-	
+
 }
 
 void show_array(int* head, size_t length) {
@@ -204,7 +206,7 @@ void show_array(int* head, size_t length) {
 }
 
 void fill_array(int* head, size_t length, int value) {
-	
+
 	for (int i=0;i<(int)length;i++) {
 		*(head+i) = value;
 	}
@@ -383,38 +385,8 @@ void pointer_exe() {
 	/* } */
 }
 
-void test_compare() {
 
-
-	Node* lhs = (Node*)malloc(sizeof(Node));
-	lhs->data = 5;
-
-	Node* rhs = (Node*)malloc(sizeof(Node));
-	rhs->data = 4;
-
-	fptr_compare COMP = compare_nodes;
-
-	int ret = COMP(lhs,rhs);
-	if (ret > 0)
-		printf("The bigger one was %d\n", lhs->data);
-	else if (ret == 0)
-		printf("The they were equal! data: %d\n", lhs->data);
-	else
-		printf("The bigger one was %d\n", rhs->data);
-}
-
-int main(int argc, char* argv[] ) {
-
-	printf("starting...\n");
-	/* char* ret = string_stuff(); */
-	/* pass_str_function(ret); */
-	/* do_scanf(); */
-	/* do_pendulum_puzzle(); */
-	/* do_circle_puzzle(); */
-	/* printf("max test %d\n", max(4,5)); */
-	/* do_tip_puzzle(); */
-	/* pointer_exe(); */
-	/* test_compare(); */
+void do_sort_btree() {
 
 	Node* root = NULL;
 	Node** tree = &root;
@@ -438,10 +410,170 @@ int main(int argc, char* argv[] ) {
 
 	in_order(root, display);
 
-/* 	show_tree((*tree), display); */
-/* 	show_tree((*tree)->left, display); */
-/* 	show_tree((*tree)->left->left, display); */
-/* 	show_tree((*tree)->right, display); */
+	/* 	show_tree((*tree), display); */
+	/* 	show_tree((*tree)->left, display); */
+	/* 	show_tree((*tree)->left->left, display); */
+	/* 	show_tree((*tree)->right, display); */
+}
+
+void test_compare() {
+
+	Node* lhs = (Node*)malloc(sizeof(Node));
+	lhs->data = 5;
+
+	Node* rhs = (Node*)malloc(sizeof(Node));
+	rhs->data = 4;
+
+	fptr_compare COMP = compare_nodes;
+
+	int ret = COMP(lhs,rhs);
+	if (ret > 0)
+		printf("The bigger one was %d\n", lhs->data);
+	else if (ret == 0)
+		printf("The they were equal! data: %d\n", lhs->data);
+	else
+		printf("The bigger one was %d\n", rhs->data);
+}
+
+/**
+ * Given an ArrayHolder return the indexes that would
+ * let you copy either the right or left side
+ */
+
+void get_indexes(const ArrayHolder* arr_holder, enum Side side,
+		int* start, int* end) {
+
+	assert (arr_holder != NULL);
+	static int zero = 0;
+
+	int half = arr_holder->length/2 + (arr_holder->length % 2);
+	if (side == Left) {
+		*start = zero;
+		*end = half;
+	}
+	else {
+		*start = half;
+		int last = arr_holder->length;
+		*end = last;
+	}
+}
+
+/**
+ * Return the specified side of the array
+ */
+ArrayHolder* get_half(const ArrayHolder* arr_holder, enum Side side) {
+
+	assert (arr_holder != NULL);
+	ArrayHolder* ret = (ArrayHolder*)malloc(sizeof(ArrayHolder)); 
+
+	int start, end;
+	get_indexes(arr_holder, side, &start, &end);
+
+	assert (end >= start);
+	int half_length = end - start;
+
+	/* int* ret_arr = get_dynamic_array(half_length); */
+	int* ret_arr = (int*)calloc(half_length, sizeof(int));
+
+	for (int i=0; i<half_length; i++) {
+		*(ret_arr+i) = arr_holder->arr[i+start];
+	}
+
+	ret->arr = ret_arr;
+	ret->length = half_length;
+	return ret;
+}
+
+int find_max_by_splitting(const ArrayHolder* arr_holder) {
+
+	assert (arr_holder != NULL);
+
+	int max_sum = 0;
+
+	if (arr_holder->length == 1) {
+		max_sum = max(arr_holder->arr[0],0);
+	}
+	else {
+		// find maxc
+		// max sum crossing into the left 
+		ArrayHolder* left = get_half(arr_holder, Left);
+		int max_left = 0;	
+		int left_sum = 0;
+		for (int i=left->length-1;i>=0;i--) {
+			left_sum += left->arr[i];
+			max_left = max(max_left, left_sum);
+		}
+		// max sum crossing into the right
+		ArrayHolder* right = get_half(arr_holder, Right);
+		int max_right = 0; 
+		int right_sum =0;
+		for (int i=0;i<right->length;i++) {
+			right_sum += right->arr[i];
+			max_right = max(max_right, right_sum);
+		}
+		int maxc = max_left + max_right;
+
+		max_sum = max(maxc, max(find_max_by_splitting(left), 
+					find_max_by_splitting(right)));
+	}
+	return max_sum;
+}
+
+int find_max_by_brute_force(const int arr[], int size) {
+
+	int max_sum = 0;
+	// 0 <= i <= j < n
+	for (int i=0;i<size; i++) {
+		int sum=0;
+		for(int j=i;j<size;j++) {
+			sum = sum + arr[j];
+			max_sum = max(max_sum, sum);
+		}
+	}
+	return max_sum;
+}
+
+int main(int argc, char* argv[] ) {
+
+	printf("starting...\n");
+	/* char* ret = string_stuff(); */
+	/* pass_str_function(ret); */
+	/* do_scanf(); */
+	/* do_pendulum_puzzle(); */
+	/* do_circle_puzzle(); */
+	/* printf("max test %d\n", max(4,5)); */
+	/* do_tip_puzzle(); */
+	/* pointer_exe(); */
+	/* test_compare(); */
+	/* do_sort_btree(); */
+
+	/* Intializes random number generator */
+	time_t t;
+	srand((unsigned) time(&t));
+
+	/* int input[] = {54, -22,7,-6,1,4,5,8,-3, 22, 44,-34}; */
+	/* int input[] = {1,2,3,-10,4,-8,5,-3,32,-34,23,34,43,-133,14,32,-400}; */
+
+	int length = 100000;
+	int input[length];
+	printf("filling input array of length %d with randoms...\n", length);
+	for (int i=0;i<length;i++) {
+		input[i] = rand() % 2500;
+		if (i % 5 == 0)
+			input[i] = input[i] * -1;
+		printf("%d ", input[i]);
+	}
+	printf("\nfinished populating input array\n");
+
+	ArrayHolder holder = 
+	{ .arr = input, .length = sizeof(input)/sizeof(input[0])};
+
+	printf("finding max using brute force...\n");
+	int max = find_max_by_brute_force(input,holder.length); 
+	printf("max from brute force was %d\n", max);
+	printf("finding max using divide and conquer...\n");
+	max = find_max_by_splitting(&holder);
+	printf("max from divide and conquer was %d\n", max);
 
 	return EXIT_SUCCESS;
 }
